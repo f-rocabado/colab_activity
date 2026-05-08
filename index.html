@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Participación en el Estudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .loader { border-top-color: #3b82f6; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div id="main-content" class="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center transition-all duration-300">
+        <div class="mb-6">
+            <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">Actividad de colaboración</h1>
+            <p class="text-slate-500 mt-2">Haz clic en el botón para comenzar. Serás asignado a un cuestionario siguiendo un orden balanceado.</p>
+        </div>
+
+        <button onclick="handleParticipation()" id="participate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 group">
+            <span id="btn-text">Participar ahora</span>
+            <svg id="btn-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+        </button>
+
+        <p class="text-xs text-slate-400 mt-6">Al hacer clic, serás redirigido a un cuestionario para poder participar en el estudio.</p>
+    </div>
+
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-white/80 backdrop-blur-sm flex-col items-center justify-center transition-opacity duration-300 z-50">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mb-4"></div>
+        <p id="loading-text" class="text-slate-600 font-medium">Conectando...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- IMPORTANTE: REEMPLAZA ESTO CON TUS DATOS DE FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "TU_PROYECTO_ID",
+            authDomain: "TU_PROYECTO.firebaseapp.com",
+            projectId: "TU_PROYECTO_ID",
+            storageBucket: "TU_PROYECTO.appspot.com",
+            messagingSenderId: "TU_ID",
+            appId: "TU_APP_ID"
+        };
+        // -----------------------------------------------------------
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const internalAppId = "estudio-alumnos-v1"; // ID fijo para tu despliegue
+
+        const links = [
+            "https://forms.cloud.microsoft/e/uJTjnd8jHw",
+            "https://forms.cloud.microsoft/e/QzvRkwd9Er"
+        ];
+
+        window.handleParticipation = async function() {
+            const btn = document.getElementById('participate-btn');
+            const overlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+
+            try {
+                overlay.classList.remove('hidden');
+                btn.disabled = true;
+
+                loadingText.innerText = "Iniciando sesión...";
+                if (!auth.currentUser) await signInAnonymously(auth);
+
+                loadingText.innerText = "Asignando cuestionario...";
+                const counterDocRef = doc(db, 'participacion', internalAppId, 'config', 'globalState');
+                
+                let selectedIndex = 0;
+                await runTransaction(db, async (transaction) => {
+                    const counterDoc = await transaction.get(counterDocRef);
+                    let count = 0;
+                    if (counterDoc.exists()) count = counterDoc.data().count || 0;
+                    
+                    selectedIndex = count % links.length;
+                    transaction.set(counterDocRef, { count: count + 1 }, { merge: true });
+                });
+
+                loadingText.innerText = "Redirigiendo...";
+                setTimeout(() => { window.location.href = links[selectedIndex]; }, 500);
+
+            } catch (error) {
+                console.error(error);
+                overlay.classList.add('hidden');
+                btn.disabled = false;
+                alert("Error de conexión. Inténtalo de nuevo.");
+            }
+        };
+    </script>
+</body>
+</html>
