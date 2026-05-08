@@ -22,7 +22,7 @@
                 </svg>
             </div>
             <h1 class="text-2xl font-bold text-slate-800">Actividad de colaboración</h1>
-            <p class="text-slate-500 mt-2">Haz clic en el botón para comenzar. Serás asignado a un cuestionario siguiendo un orden balanceado.</p>
+            <p class="text-slate-500 mt-2">Haz clic en el botón para comenzar. Serás asignado aleatoriamente a uno de los cuestionarios del estudio.</p>
         </div>
 
         <button onclick="handleParticipation()" id="participate-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 group">
@@ -35,73 +35,37 @@
         <p class="text-xs text-slate-400 mt-6">Al hacer clic, serás redirigido a un cuestionario para poder participar en el estudio.</p>
     </div>
 
+    <!-- Capa de Carga -->
     <div id="loading-overlay" class="hidden fixed inset-0 bg-white/80 backdrop-blur-sm flex-col items-center justify-center transition-opacity duration-300 z-50">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mb-4"></div>
-        <p id="loading-text" class="text-slate-600 font-medium">Conectando...</p>
+        <p class="text-slate-600 font-medium text-center px-4">Redirigiéndote al cuestionario...</p>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Configuración de Firebase integrada desde tu captura
-        const firebaseConfig = {
-            apiKey: "AIzaSyBQ89iRegSB6lQi9pV4bOJeEta6zVmsPGk",
-            authDomain: "estudio-alumnos.firebaseapp.com",
-            projectId: "estudio-alumnos",
-            storageBucket: "estudio-alumnos.firebasestorage.app",
-            messagingSenderId: "293693354004",
-            appId: "1:293693354004:web:425363878ba510799db701",
-            measurementId: "G-2YQBKVTX7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const internalAppId = "estudio-colab-v1";
-
+    <script>
         const links = [
             "https://forms.cloud.microsoft/e/uJTjnd8jHw",
             "https://forms.cloud.microsoft/e/QzvRkwd9Er"
         ];
 
-        window.handleParticipation = async function() {
+        function handleParticipation() {
             const btn = document.getElementById('participate-btn');
             const overlay = document.getElementById('loading-overlay');
-            const loadingText = document.getElementById('loading-text');
+            const content = document.getElementById('main-content');
 
-            try {
-                overlay.classList.remove('hidden');
-                btn.disabled = true;
+            // 1. Mostrar estado de carga visual
+            overlay.classList.remove('hidden');
+            content.classList.add('opacity-50', 'pointer-events-none');
+            btn.disabled = true;
 
-                loadingText.innerText = "Iniciando sesión...";
-                if (!auth.currentUser) await signInAnonymously(auth);
+            // 2. Seleccionar un enlace al azar
+            const randomIndex = Math.floor(Math.random() * links.length);
+            const selectedLink = links[randomIndex];
 
-                loadingText.innerText = "Asignando cuestionario...";
-                // Ruta para el contador (Cuadrado Latino)
-                const counterDocRef = doc(db, 'participacion', 'estudio', 'config', 'globalState', 'counters', 'main');
-                
-                let selectedIndex = 0;
-                await runTransaction(db, async (transaction) => {
-                    const counterDoc = await transaction.get(counterDocRef);
-                    let count = 0;
-                    if (counterDoc.exists()) count = counterDoc.data().count || 0;
-                    
-                    selectedIndex = count % links.length;
-                    transaction.set(counterDocRef, { count: count + 1 }, { merge: true });
-                });
-
-                loadingText.innerText = "Redirigiendo...";
-                setTimeout(() => { window.location.href = links[selectedIndex]; }, 500);
-
-            } catch (error) {
-                console.error("Error:", error);
-                overlay.classList.add('hidden');
-                btn.disabled = false;
-                alert("Error de conexión. Revisa que en Firebase tengas activo: 1. Anonymous Auth y 2. Cloud Firestore en 'Test Mode'.");
-            }
-        };
+            // 3. Redirigir (con un pequeño retraso de 600ms para que la carga sea visible)
+            setTimeout(() => {
+                window.location.href = selectedLink;
+            }, 600);
+        }
     </script>
 </body>
 </html>
