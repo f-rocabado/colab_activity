@@ -43,8 +43,10 @@
 
     <script>
         const links = [
-            "https://forms.cloud.microsoft/e/uJTjnd8jHw",
-            "https://forms.cloud.microsoft/e/QzvRkwd9Er"
+            "https://forms.gle/f3ZEBfSafrHcx8q96",
+            "https://forms.gle/nxEgTE5NazzyM3EY7",
+            "https://forms.gle/NDKoZ5L5wLX1ingMA",
+            "https://forms.gle/KrdTjknANFp5Znc68"
         ];
 
         function handleParticipation() {
@@ -52,16 +54,16 @@
             const overlay = document.getElementById('loading-overlay');
             const content = document.getElementById('main-content');
 
-            // 1. Mostrar estado de carga visual
+            // Mostrar estado de carga visual
             overlay.classList.remove('hidden');
             content.classList.add('opacity-50', 'pointer-events-none');
             btn.disabled = true;
 
-            // 2. Seleccionar un enlace al azar
+            // Seleccionar un enlace al azar (25% de probabilidad para cada uno)
             const randomIndex = Math.floor(Math.random() * links.length);
             const selectedLink = links[randomIndex];
 
-            // 3. Redirigir (con un pequeño retraso de 600ms para que la carga sea visible)
+            // Redirigir
             setTimeout(() => {
                 window.location.href = selectedLink;
             }, 600);
